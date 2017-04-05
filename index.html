@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DiglettPunt</title>
+</head>
+<body>
+    <canvas id="canvas" width="480px" height="480px"
+            style="background: url(Images/platform.png) no-repeat center center;
+                   position: absolute;
+                   left: 10px;
+                   top: 10px;
+                   z-index: 0;"></canvas>
+    <canvas id="canvas2" width="480px" height="480px"
+            style="position: absolute;
+                   left: 10px;
+                   top: 10px;
+                   z-index: 0;"></canvas>
+</body>
+<script>
+    const MOLE_SPRITE_SIZE = 80;
+    const INIT_TIMER = 60;
+    var gametimecount = INIT_TIMER;
+    var spawntimer = null;
+    var gametimer = null;
+    var gamestate = 0;
+    var smacktimer = null;
+    var smackcount = 0;
+    var score = 0;
+    var smacksound = new Audio("./Sound/Smack.wav");
+    var startsound = new Audio("./Sound/MKstart.mp3");
+    var m = new Image();
+    m.src = "Images/MoleSS.png";
+    var sm = new Image();
+    sm.src = "Images/smack.png";
+    var c;
+    var ctx;
+    var c2;
+    var ctx2;
+    var moles = new Array(3);
+    for(var i = 0; i < 3; i++) {
+        moles[i] = new Array(3);
+        for(var j = 0; j < 3; j++) {
+            moles[i][j] = { img:m,
+                            spritesheet_x:800,
+                            spritesheet_y:0,
+                            position_x: 100 + ( j * 100) + (((-30)*i) + ((30 * i) * j)),
+                            position_y: 100 + ( i * 100),
+                            MTimer:null,
+                            state:0};
+        }
+    }
+
+    function moveup(arg) {
+        //console.log(arg.spritesheet_x);
+        if(arg.spritesheet_x > 0) {
+            arg.spritesheet_x-=MOLE_SPRITE_SIZE;
+            draw();
+            //console.log("interval");
+        } else {
+            clearInterval(arg.MTimer);
+            arg.MTimer = null;
+            arg.state = 1;
+        }
+    }
+
+    function movedown(arg) {
+        //console.log("movedown");
+        if(arg.spritesheet_x < 800) {
+            arg.spritesheet_x+=MOLE_SPRITE_SIZE;
+            draw();
+          //  console.log("interval");
+        } else {
+            clearInterval(arg.MTimer);
+            arg.MTimer = null;
+            arg.state = 0;
+        }
+    }
+
+    function popup(arg) {
+        //console.log("popup");
+        clearInterval(arg.MTimer);
+        arg.MTimer = setInterval(function(){moveup(arg);}, 10);
+        //console.log(arg.MTimer);
+        //console.log(arg.spritesheet_x);
+    }
+
+    function popdown(arg) {
+
+        clearInterval(arg.MTimer);
+        arg.MTimer = setInterval(function(){movedown(arg);}, 10);
+    }
+
+    function upordown(arg) {
+        if(arg.state == 0 && arg.MTimer == null) {
+            popup(arg);
+        } else if(arg.state == 1 && arg.MTimer == null) {
+            popdown(arg);
+        }
+    }
+    function draw() {
+        ctx.clearRect(0,0, c.width, c.height);
+        for(var i = 0; i < 3; i++) {
+            for(var j = 0; j < 3; j++) {
+                ctx.drawImage(  moles[i][j].img,
+                                moles[i][j].spritesheet_x,
+                                moles[i][j].spritesheet_y,
+                                MOLE_SPRITE_SIZE,
+                                MOLE_SPRITE_SIZE,
+                                moles[i][j].position_x,
+                                moles[i][j].position_y,
+                                MOLE_SPRITE_SIZE,
+                                MOLE_SPRITE_SIZE);
+            }
+        }
+
+        ctx.fillText("Score: " + score, 10, 80);
+    }
+
+    function setup() {
+        c = document.getElementById("canvas");
+        ctx = c.getContext("2d");
+        ctx.font = "30px Verdana";
+        c2 = document.getElementById("canvas2");
+        ctx2 = c2.getContext("2d");
+        ctx2.font = "30px Verdana";
+        ctx2.clearRect(10, 10, 200, 30);
+        ctx2.fillText("Timer: " + gametimecount, 10, 40);
+    }
+
+    function reset() {
+        for(var i = 0; i < 3; i++) {
+            for(var j = 0; j < 3; j++) {
+                movedown(moles[i][j]);
+            }
+        }
+
+    }
+    function start() {
+        gametimecount = INIT_TIMER;
+        score = 0;
+        gametimer = setInterval(countdown, 1000);
+        spawntimer = setInterval(spawner, 250);
+        gamestate = 0;
+    }
+
+    function countdown() {
+        //console.log("countingdown");
+        if(gametimecount > 0)
+            --gametimecount;
+        else {
+            //console.log("end");
+            clearInterval(spawntimer);
+            clearInterval(gametimer);
+        }
+        if(gametimecount == 20) {
+            ctx2.fillStyle ="#FF0000";
+            clearInterval(spawntimer);
+            spawntimer = setInterval(spawner, 100);
+        }
+        ctx2.clearRect(10, 10, 200, 30);
+        ctx2.fillText("Timer: " + gametimecount, 10, 40);
+    }
+
+    function spawner() {
+        //console.log("spawning");
+        switch(Math.floor(Math.random() * 10)) {
+            case 0:
+                upordown(moles[0][0]);
+                break;
+            case 1:
+                upordown(moles[0][1]);
+                break;
+            case 2:
+                upordown(moles[0][2]);
+                break;
+            case 3:
+                upordown(moles[1][0]);
+                break;
+            case 4:
+                upordown(moles[1][1]);
+                break;
+            case 5:
+                upordown(moles[1][2]);
+                break;
+            case 6:
+                upordown(moles[2][0]);
+                break;
+            case 7:
+                upordown(moles[2][1]);
+                break;
+            case 8:
+                upordown(moles[2][2]);
+                break;
+            default:
+        }
+        //console.log(gametimecount);
+
+    }
+    onload=function() {
+        setup();
+        draw();
+        startsound.play();
+        setTimeout(start, 3500);
+    };
+
+    onkeydown=hit;
+
+    function smack(arg) {
+        if(arg.state == 1 && smacktimer == null) {
+            smacksound.pause();
+            smacksound.currentTime = 0;
+            smacksound.play();
+            popdown(arg);
+            smacktimer = setInterval(function() {drawSmack(arg);}, 40);
+            score++;
+
+        }
+    }
+
+    function drawSmack(arg) {
+        if(smackcount > 3) {
+            clearInterval(smacktimer);
+            smacktimer = null;
+            smackcount = 0;
+            ctx2.clearRect(arg.position_x, arg.position_y, c.width, c.height);
+        } else {
+            ctx2.clearRect(arg.position_x, arg.position_y, c.width, c.height);
+            ctx2.drawImage(  sm,
+                (MOLE_SPRITE_SIZE * smackcount),
+                0,
+                MOLE_SPRITE_SIZE,
+                MOLE_SPRITE_SIZE,
+                arg.position_x,
+                arg.position_y,
+                MOLE_SPRITE_SIZE,
+                MOLE_SPRITE_SIZE);
+            smackcount++;
+        }
+    }
+
+    function hit(e) {
+        var keycode = null;
+        if(gametimecount != 0) {
+            if(e.keyCode == 9) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (e.event) {
+                keycode = e.event;
+            } else if (e.which) {
+                keycode = e.which;
+            }
+            //console.log(keycode);
+            switch (keycode) {
+                case 49:
+                case 81:
+                case 97:
+                    smack(moles[0][0]);
+                    break;
+                case 50:
+                case 87:
+                case 98:
+                    smack(moles[0][1]);
+                    break;
+                case 51:
+                case 69:
+                case 99:
+                    smack(moles[0][2]);
+                    break;
+                case 52:
+                case 65:
+                case 100:
+                    smack(moles[1][0]);
+                    break;
+                case 53:
+                case 83:
+                case 101:
+                    smack(moles[1][1]);
+                    break;
+                case 54:
+                case 68:
+                case 102:
+                    smack(moles[1][2]);
+                    break;
+                case 55:
+                case 90:
+                case 103:
+                    smack(moles[2][0]);
+                    break;
+                case 56:
+                case 88:
+                case 104:
+                    smack(moles[2][1]);
+                    break;
+                case 57:
+                case 67:
+                case 105:
+                    smack(moles[2][2]);
+                    break;
+            }
+        }
+    }
+</script>
+</html>
